@@ -4,6 +4,14 @@ const cors = require('cors');
 require('dotenv').config()
 const ObjectId = require('mongodb').ObjectId;
 
+// Firebase admin initialize
+const admin = require("firebase-admin");
+const serviceAccount = require("./watch-ecom-firebase-adminsdk.json");
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+// Express call
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -14,6 +22,21 @@ app.use(express.json());
 // Database Connection
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.juclx.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+// Token verify
+async function verifyToken(req, res, next) {
+    if (req.headers?.authorization?.startsWith('Bearer ')) {
+        const idToken = req.headers.authorization.split('Bearer ')[1];
+        try {
+            const decodedUser = await admin.auth().verifyIdToken(idToken);
+            req.decodedUserEmail = decodedUser.email;
+        }
+        catch {
+
+        }
+    }
+    next();
+}
 
 async function run() {
     try {
@@ -71,12 +94,22 @@ async function run() {
         });
 
         // PUT API to update user role
-        app.put('/users/admin', async (req, res) => {
+        app.put('/users/admin', verifyToken, async (req, res) => {
             const user = req.body;
-            const filter = { email: user.email };
-            const updateDoc = { $set: { role: 'admin' } };
-            const result = await usersCollection.updateOne(filter, updateDoc);
-            res.json(result);
+            const requester = req.decodedUserEmail;
+            if (requester) {
+                const requesterAccount = await usersCollection.findOne({ email: requester });
+                // Check requester is admin or not
+                if (requesterAccount.role === 'admin') {
+                    const filter = { email: user.email };
+                    const updateDoc = { $set: { role: 'admin' } };
+                    const result = await usersCollection.updateOne(filter, updateDoc);
+                    res.json(result);
+                }
+            } else {
+                res.status(401).json({ message: 'Unauthorized' })
+            }
+
         });
 
         // GET Api to check role
@@ -116,11 +149,19 @@ async function run() {
         });
 
         // POST API to get orders by email
-        app.post('/orders/byemail', async (req, res) => {
-            const email = req.body;
-            const filter = { email: { $in: email } };
-            const products = await ordersCollection.find(filter).toArray();
-            res.send(products);
+        app.post('/orders/byemail', verifyToken, async (req, res) => {
+            // console.log(req.headers);
+            const email = req.body.email;
+            // console.log('server-email', req.decodedUserEmail, 'user-email', email);
+            if (req.decodedUserEmail === email) {
+                const filter = { email: email };
+                const products = await ordersCollection.find(filter).toArray();
+                res.send(products);
+            }
+            else {
+                res.status(401).json({ message: 'Your are not authorized' })
+            }
+
         });
 
         // DELETE API to delete order
@@ -151,7 +192,7 @@ app.listen(port, () => {
 
 /*
 One time:
-1. heroku account open
+1. Heroku account open
 2. Heroku software install
 -------------
 Every project
