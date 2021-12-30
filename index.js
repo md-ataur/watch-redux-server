@@ -4,6 +4,9 @@ const cors = require('cors');
 require('dotenv').config()
 const ObjectId = require('mongodb').ObjectId;
 
+// Stripe secret key require
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
+
 // Firebase admin initialize
 const admin = require("firebase-admin");
 const serviceAccount = require("./watch-ecom-firebase-adminsdk.json");
@@ -115,8 +118,8 @@ async function run() {
         // GET Api to check role
         app.get('/users/:email', async (req, res) => {
             const email = req.params.email;
-            const query = { email: email };
-            const user = await usersCollection.findOne(query);
+            const filter = { email: email };
+            const user = await usersCollection.findOne(filter);
             let isAdmin = false;
             if (user?.role === 'admin') {
                 isAdmin = true;
@@ -172,6 +175,22 @@ async function run() {
             res.json(result);
         });
 
+        // Payment intent
+        app.post("/create-payment-intent", async (req, res) => {
+            const paymentInfo = req.body;
+            const amount = paymentInfo.totalPrice * 100;
+            // console.log(amount);
+
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card'],
+            });
+            res.json({ clientSecret: paymentIntent.client_secret });
+        });
+
+
         // console.log('Successfully database connected');
     }
     finally {
@@ -205,7 +224,7 @@ Every project
 7. heroku create (only one time for a project)
 8. command: git push heroku main
 -------
-update:
+Update:
 1. save everything and check locally
 2. git add, git commit-m", git push
 2. git push heroku main
