@@ -4,6 +4,18 @@ const cors = require('cors');
 require('dotenv').config()
 const ObjectId = require('mongodb').ObjectId;
 
+// Express call
+const app = express();
+const port = process.env.PORT || 5000;
+
+app.all('*', function (req, res, next) {
+    var origin = req.get('origin');
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+});
+
 // Stripe secret key require
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
@@ -13,10 +25,6 @@ const serviceAccount = require("./watch-ecom-firebase-adminsdk.json");
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
-
-// Express call
-const app = express();
-const port = process.env.PORT || 5000;
 
 // Middleware functions
 app.use(cors());
