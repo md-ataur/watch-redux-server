@@ -228,5 +228,5 @@ Every project
 Update:
 1. save everything and check locally
 2. git add, git commit -m, git push
-2. git push heroku main
+3. git push heroku main
 */
