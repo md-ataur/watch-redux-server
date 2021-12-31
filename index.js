@@ -222,11 +222,11 @@ Every project
 5. make sure: put process.env.PORT in front of your port number
 6. heroku login
 7. heroku create (only one time for a project)
-8. .env variables set in heroku
-9. command: git push heroku main
+8. command: git push heroku main
+9. .env variables set in heroku
 -------
 Update:
 1. save everything and check locally
-2. git add, git commit-m", git push
+2. git add, git commit -m, git push
 2. git push heroku main
 */
