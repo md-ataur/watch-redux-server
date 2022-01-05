@@ -115,7 +115,7 @@ async function run() {
 
         });
 
-        // GET Api to check role
+        // GET Api to check user role
         app.get('/users/:email', async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
@@ -153,7 +153,6 @@ async function run() {
 
         // POST API to get orders by email
         app.post('/orders/byemail', verifyToken, async (req, res) => {
-            // console.log(req.headers);
             const email = req.body.email;
             // console.log('server-email', req.decodedUserEmail, 'user-email', email);
             if (req.decodedUserEmail === email) {
